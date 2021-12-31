@@ -2,7 +2,6 @@
 #include <time.h>
 #include <math.h>
 #include <iomanip>
-#include "graphics.cpp"
 #include <stdlib.h>
 #include <SDL2/SDL.h>
 
@@ -47,6 +46,8 @@ int countSurroundingMines(int x, int y)
 }
 void generateScheme(int rows, int columns, int mines)
 {
+    schemeRows = rows;
+    schemeColumns = columns;
     gameState = GAME_UNFINISHED_STATE;
     int mineScheme[MAX_SCHEME_SIZE][MAX_SCHEME_SIZE];
     for(int i = 0; i < rows; i++)
@@ -145,6 +146,7 @@ void openCell(int x, int y)
     {
         gameState = GAME_BOOM_STATE;
     }
+    cout<<"Cell "<< x <<" "<< y<<" opened!"<<endl;
 }
 void openIfCompleted(int x,int y)
 {
@@ -172,11 +174,10 @@ void refreshGrid()
         cout<<endl;
     }
 }
-int main()
+/*int main()
 {
 
-
-
+    init();
     //drawMatrix(8,8);
     //=======================    
     srand( time(NULL) );
@@ -209,7 +210,7 @@ int main()
         }
         cout<<endl;
     }*/
-    int cmd;
+    /*int cmd;
     while(gameState == GAME_UNFINISHED_STATE && cin>>cmd)
     {
         int x,y;
@@ -255,4 +256,4 @@ int main()
     
 
 
-}
+}*/

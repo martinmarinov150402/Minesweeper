@@ -1,74 +1,94 @@
 #include <iostream>
-#include <SDL2/SDL.h>
+#include <SFML/Graphics.hpp>
+#include <vector>
+#include "main.cpp"
 
-#define SQUARE_SIZE 50
+#define SQUARE_SIZE 30
 
 using namespace std;
 
-void drawMatrix(int n, int m)
+vector<sf::RectangleShape> grid;
+sf::Texture defTexture;
+void updateGameGrid(int rows, int cols)
 {
-    if(SDL_Init(SDL_INIT_VIDEO) < 0)
+    for(int i = 0; i < rows; i++)
     {
-        std::cout << "Failed to initialize the SDL2 library\n";
-        return;
-    }
-
-    SDL_Window *window = SDL_CreateWindow("SDL2 Window",
-                                          SDL_WINDOWPOS_CENTERED,
-                                          SDL_WINDOWPOS_CENTERED,
-                                          680, 480,
-                                          0);
-
-    if(!window)
-    {
-        std::cout << "Failed to create window\n";
-        return;
-    }
-
-    SDL_Surface *window_surface = SDL_GetWindowSurface(window);
-
-    if(!window_surface)
-    {
-        std::cout << "Failed to get the surface from the window\n";
-        return;
-    }
-    SDL_UpdateWindowSurface(window);
-    int curX = 0, curY = 0;
-
-    
-
-    // Set render color to red ( background will be rendered in this color )
-   
-
-    
-    for(int i = 0; i < n; i++)
-    {
-        curX=0;
-        for(int j=0;j < m;j++)
+        for(int j = 0; j < cols; j++)
         {
-            SDL_Renderer* renderer = NULL;
-    renderer =  SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED);
-             SDL_SetRenderDrawColor( renderer, 255, 0, 0, 255 );
-
-            // Clear winow
-            SDL_RenderClear( renderer );
-
-            // Creat a rect at pos ( 50, 50 ) that's 50 pixels wide and 50 pixels high.
-            
-
-            // Set render color to blue ( rect will be rendered in this color )
-            SDL_SetRenderDrawColor( renderer, 0, 0, 255, 255 );
-            SDL_Rect r;
-            r.x = curX;
-            r.y = curY;
-            r.w = SQUARE_SIZE;
-            r.h = SQUARE_SIZE;
-            SDL_RenderFillRect( renderer, &r );
-
-            SDL_RenderPresent(renderer);
-
-            curX+=SQUARE_SIZE;
+            if(gameGrid[i][j] == UNOPENED_CELL)
+            {
+                
+            }
         }
-        curY+=SQUARE_SIZE;
     }
+}
+int drawMatrix(int rows, int cols)
+{
+    sf::RenderWindow window(sf::VideoMode((rows+2)*SQUARE_SIZE,(cols+2)*SQUARE_SIZE), "Minesweeper");
+    if(!defTexture.loadFromFile("images/default.png"))
+    {
+        cout << "Texture load failed" <<endl;
+        
+    }
+    for(int i = 0; i < rows; i++)
+    {
+        for(int j = 0; j < cols; j++)
+        {
+            sf::RectangleShape tmp;
+            tmp.setSize(sf::Vector2f(SQUARE_SIZE,SQUARE_SIZE));
+            tmp.setPosition(sf::Vector2f((j+1) * SQUARE_SIZE, (i+1) * SQUARE_SIZE));
+            
+        
+            grid.push_back(tmp);
+        }
+    }
+    while(window.isOpen())
+    {
+        sf::Event event;
+        while(window.pollEvent(event))
+        {
+            //cout<<event.type<<endl;
+            switch(event.type)
+            {
+                case sf::Event::Closed:
+                {
+                    window.close();
+                    break;
+                }
+                case sf::Event::MouseButtonPressed:
+                {
+                    if(event.key.code == sf::Mouse::Left)
+                    {
+                        if(event.mouseButton.x > SQUARE_SIZE && event.mouseButton.x < window.getSize().x - SQUARE_SIZE && event.mouseButton.y > SQUARE_SIZE && event.mouseButton.y < window.getSize().y - SQUARE_SIZE)
+                        {
+                        int r = (event.mouseButton.y / SQUARE_SIZE) - 1;
+                        int c = (event.mouseButton.x / SQUARE_SIZE) - 1;
+                        cout<<r<<" "<<c<<endl;
+                        openCell(r,c);
+                        refreshGrid();
+                        //cout<<event.mouseButton.x<<endl;
+                        }
+                    }
+                }
+            }
+            
+        }
+        window.clear();
+        for(int i = 0; i < rows; i++)
+        {
+            for(int j = 0; j < cols; j++)
+            {
+                grid[i * cols + j].setTexture(&defTexture);
+                window.draw(grid[i * cols + j]);
+            }
+        }
+        window.display();
+    }
+    return EXIT_SUCCESS;
+}
+int main()
+{
+    generateScheme(10, 10, 7);
+    drawMatrix(10,10);
+
 }
