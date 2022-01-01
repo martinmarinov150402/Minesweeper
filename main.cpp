@@ -46,6 +46,7 @@ int countSurroundingMines(int x, int y)
 }
 void generateScheme(int rows, int columns, int mines)
 {
+    srand(time(NULL));
     schemeRows = rows;
     schemeColumns = columns;
     gameState = GAME_UNFINISHED_STATE;
@@ -98,10 +99,11 @@ void removeMine(int x, int y)
     {
         return;
     }
-    if(gameGrid[x][y] != HAS_MINE)
+    if(gameGrid[x][y] != MINE_CELL)
     {
         return;
     }
+    cout<<"TUKA"<<endl;
     gameGrid[x][y] = UNOPENED_CELL;
     setted--;
 }
@@ -164,7 +166,7 @@ void openIfCompleted(int x,int y)
 }
 void refreshGrid()
 {
-    system("clear");
+    //system("clear");
     for(int i = 0; i < schemeRows; i++)
     {
         for(int j = 0; j < schemeColumns; j++)
