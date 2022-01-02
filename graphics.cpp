@@ -8,11 +8,24 @@
 using namespace std;
 
 vector<sf::RectangleShape> grid;
+sf::RectangleShape status;
 sf::Texture defTexture;
 sf::Texture numbers[9];
 sf::Texture mine;
 sf::Texture flag;
+sf::Texture happy,cool,sad;
+sf::RectangleShape mCount;
+sf::Text mCountText;
+sf::Font arial;
 
+
+string intToString(int number)
+{
+    ostringstream convertToString;
+    convertToString.clear();
+    convertToString << number;
+    return convertToString.str();
+}
 void updateGameGrid(int rows, int cols)
 {
     for(int i = 0; i < rows; i++)
@@ -40,11 +53,45 @@ void updateGameGrid(int rows, int cols)
             }
         }
     }
+    if(gameState == GAME_WIN_STATE)
+    {
+        status.setTexture(&cool);
+    }
+    else if(gameState == GAME_BOOM_STATE)
+    {
+        status.setTexture(&sad);
+    }
+    else
+    {
+        status.setTexture(&happy);
+    }
+    
+    string tmp = intToString(minesCount - puttedMines);
+    mCountText.setString(tmp);
+    
+
+
 }
 int drawMatrix(int rows, int cols)
 {
-    sf::RenderWindow window(sf::VideoMode((rows+2)*SQUARE_SIZE,(cols+2)*SQUARE_SIZE), "Minesweeper");
-    if(!defTexture.loadFromFile("images/default.png") || !mine.loadFromFile("images/mine.png") || !flag.loadFromFile("images/flag.png"))
+    sf::RenderWindow window(sf::VideoMode((rows+4)*SQUARE_SIZE,(cols+4)*SQUARE_SIZE), "Minesweeper");
+    status.setSize(sf::Vector2f(SQUARE_SIZE,SQUARE_SIZE));
+    status.setPosition(window.getSize().x / 2 - SQUARE_SIZE / 2, SQUARE_SIZE / 2);
+    mCount.setSize(sf::Vector2f(3*SQUARE_SIZE, SQUARE_SIZE));
+    mCount.setPosition(SQUARE_SIZE,SQUARE_SIZE/2);
+    mCount.setFillColor(sf::Color::White);
+    mCountText.setPosition(2.0*SQUARE_SIZE,SQUARE_SIZE/2);
+    mCountText.setFillColor(sf::Color::Red);
+    if(!arial.loadFromFile("fonts/arial.ttf"))
+    {
+        cout << "Font load failed" << endl;
+    }
+    mCountText.setFont(arial);
+    mCountText.setCharacterSize(20);
+
+    
+    
+    if(!defTexture.loadFromFile("images/default.png") || !mine.loadFromFile("images/mine.png") || !flag.loadFromFile("images/flag.png") || !happy.loadFromFile("images/happy.png") || !cool.loadFromFile("images/cool.jpeg") || !sad.loadFromFile("images/sad.jpeg"))
     {
         cout << "Texture load failed" <<endl;
         
@@ -66,7 +113,7 @@ int drawMatrix(int rows, int cols)
         {
             sf::RectangleShape tmp;
             tmp.setSize(sf::Vector2f(SQUARE_SIZE,SQUARE_SIZE));
-            tmp.setPosition(sf::Vector2f((j+1) * SQUARE_SIZE, (i+1) * SQUARE_SIZE));
+            tmp.setPosition(sf::Vector2f((j+2) * SQUARE_SIZE, (i+2) * SQUARE_SIZE));
             
         
             grid.push_back(tmp);
@@ -87,28 +134,35 @@ int drawMatrix(int rows, int cols)
                 }
                 case sf::Event::MouseButtonPressed:
                 {
-                    if(gameState == GAME_BOOM_STATE)
+                    if(gameState == GAME_BOOM_STATE || gameState == GAME_WIN_STATE)
                     {
                         break;
                     }
                     if(event.key.code == sf::Mouse::Left)
                     {
-                        if(event.mouseButton.x > SQUARE_SIZE && event.mouseButton.x < window.getSize().x - SQUARE_SIZE && event.mouseButton.y > SQUARE_SIZE && event.mouseButton.y < window.getSize().y - SQUARE_SIZE)
+                        if(event.mouseButton.x > 2*SQUARE_SIZE && event.mouseButton.x < window.getSize().x - 2*SQUARE_SIZE && event.mouseButton.y > 2*SQUARE_SIZE && event.mouseButton.y < window.getSize().y - 2*SQUARE_SIZE)
                         {
-                            int r = (event.mouseButton.y / SQUARE_SIZE) - 1;
-                            int c = (event.mouseButton.x / SQUARE_SIZE) - 1;
+                            int r = (event.mouseButton.y / SQUARE_SIZE) - 2;
+                            int c = (event.mouseButton.x / SQUARE_SIZE) - 2;
                             cout<<r<<" "<<c<<endl;
-                            openCell(r,c);
+                            if(gameGrid[r][c] == UNOPENED_CELL)
+                            {
+                                openCell(r,c);
+                            }
+                            else
+                            {
+                                openIfCompleted(r,c);
+                            }
                             refreshGrid();
                         //cout<<event.mouseButton.x<<endl;
                         }
                     }
                     else if(event.key.code == sf::Mouse::Right)
                     {
-                        if(event.mouseButton.x > SQUARE_SIZE && event.mouseButton.x < window.getSize().x - SQUARE_SIZE && event.mouseButton.y > SQUARE_SIZE && event.mouseButton.y < window.getSize().y - SQUARE_SIZE)
+                        if(event.mouseButton.x > 2*SQUARE_SIZE && event.mouseButton.x < window.getSize().x - 2*SQUARE_SIZE && event.mouseButton.y > 2*SQUARE_SIZE && event.mouseButton.y < window.getSize().y - 2*SQUARE_SIZE)
                         {
-                            int r = (event.mouseButton.y / SQUARE_SIZE) - 1;
-                            int c = (event.mouseButton.x / SQUARE_SIZE) - 1;
+                            int r = (event.mouseButton.y / SQUARE_SIZE) - 2;
+                            int c = (event.mouseButton.x / SQUARE_SIZE) - 2;
                             cout<<r<<" "<<c<<endl;
                             if(gameGrid[r][c] != MINE_CELL)
                             {
@@ -122,6 +176,11 @@ int drawMatrix(int rows, int cols)
                             }
                             
                         }
+                    }
+                    if(setted == schemeRows * schemeColumns)
+                    {
+                        cout<<"You win!!!"<<endl;
+                        gameState = GAME_WIN_STATE;
                     }
                     break;
                 }
@@ -139,13 +198,16 @@ int drawMatrix(int rows, int cols)
                 window.draw(grid[i * cols + j]);
             }
         }
+        window.draw(status);
+        window.draw(mCount);
+        window.draw(mCountText);
         window.display();
     }
     return EXIT_SUCCESS;
 }
 int main()
 {
-    generateScheme(10, 10, 10);
-    drawMatrix(10,10);
+    generateScheme(9, 9, 10);
+    drawMatrix(9,9);
 
 }

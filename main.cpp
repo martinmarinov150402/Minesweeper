@@ -29,6 +29,7 @@ char gameGrid[MAX_SCHEME_SIZE][MAX_SCHEME_SIZE];
 int gameState;
 
 int setted=0;
+int puttedMines=0;
 int schemeRows, schemeColumns, minesCount;
 
 int countSurroundingMines(int x, int y)
@@ -48,6 +49,7 @@ void generateScheme(int rows, int columns, int mines)
 {
     srand(time(NULL));
     schemeRows = rows;
+    minesCount = mines;
     schemeColumns = columns;
     gameState = GAME_UNFINISHED_STATE;
     int mineScheme[MAX_SCHEME_SIZE][MAX_SCHEME_SIZE];
@@ -106,6 +108,7 @@ void removeMine(int x, int y)
     cout<<"TUKA"<<endl;
     gameGrid[x][y] = UNOPENED_CELL;
     setted--;
+    puttedMines--;
 }
 void setAsMine(int x, int y)
 {
@@ -119,6 +122,7 @@ void setAsMine(int x, int y)
     }
     gameGrid[x][y] = MINE_CELL;
     setted++;
+    puttedMines++;
 }
 void openCell(int x, int y)
 {
@@ -161,7 +165,7 @@ void openIfCompleted(int x,int y)
         openCell(x+1, y+1);
         openCell(x-1, y+1);
         openCell(x+1, y-1);
-        openCell(x-1, y+1);
+        openCell(x-1, y-1);
     }
 }
 void refreshGrid()
@@ -245,11 +249,7 @@ void refreshGrid()
             }
 
         }
-        if(setted == schemeRows * schemeColumns)
-        {
-            cout<<"You win!!!"<<endl;
-            gameState = GAME_WIN_STATE;
-        }
+        
     }
 
 
