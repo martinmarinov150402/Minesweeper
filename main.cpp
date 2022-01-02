@@ -1,263 +1,253 @@
 #include <iostream>
-#include <time.h>
-#include <math.h>
-#include <iomanip>
-#include <stdlib.h>
-#include <SDL2/SDL.h>
+#include <SFML/Graphics.hpp>
+#include <vector>
+#include "functionality.cpp"
+
+#define SQUARE_SIZE 30
+#define ROWS 9
+#define COLUMNS 9
+#define MINES 10
 
 using namespace std;
 
-#define MAX_SCHEME_SIZE 200
-#define HAS_MINE -1
-#define UNINITIALIZED -2
-#define UNOPENED_CELL ' '
-#define MINE_CELL '*'
+vector<sf::RectangleShape> grid;
+sf::RectangleShape status;
+sf::Texture defTexture;
+sf::Texture numbers[9];
+sf::Texture mine;
+sf::Texture flag;
+sf::Texture happy,cool,sad;
+sf::RectangleShape mCount;
+sf::Text mCountText;
+sf::RectangleShape timerRect;
+sf::Text timerText;
+sf::Font arial;
+sf::Clock timer;
+bool pressed = false;
 
-#define GAME_UNFINISHED_STATE 0
-#define GAME_WIN_STATE 1
-#define GAME_BOOM_STATE -1
 
-#define CMD_OPEN 100
-#define CMD_SETMINE 101
-#define CMD_UNSETMINE 102
-#define CMD_COMPLETED_OPEN 103
-
-int scheme[MAX_SCHEME_SIZE][MAX_SCHEME_SIZE];
-
-char gameGrid[MAX_SCHEME_SIZE][MAX_SCHEME_SIZE];
-
-int gameState;
-
-int setted=0;
-int puttedMines=0;
-int schemeRows, schemeColumns, minesCount;
-
-int countSurroundingMines(int x, int y)
+string intToString(int number)
 {
-    int result = 0;
-    if(x > 0 && gameGrid[x-1][y] == '*') result++; 
-    if(x < schemeRows-1 && gameGrid[x+1][y] == '*') result++; 
-    if(y > 0 && gameGrid[x][y-1] == '*') result++; 
-    if(y < schemeColumns-1 && gameGrid[x][y+1] == '*') result++;
-    if(x > 0 && y > 0 && gameGrid[x-1][y-1] == '*') result++;
-    if(x > 0 && y < schemeColumns-1 && gameGrid[x-1][y+1] == '*') result++;
-    if(x < schemeRows-1 && y > 0 && gameGrid[x+1][y-1] == '*') result++;
-    if(x < schemeRows-1 && y < schemeColumns-1 && gameGrid[x+1][y+1] == '*') result++;
-    return result;
+    ostringstream convertToString;
+    convertToString.clear();
+    convertToString << number;
+    return convertToString.str();
 }
-void generateScheme(int rows, int columns, int mines)
+void updateGameGrid(int rows, int cols)
 {
-    srand(time(NULL));
-    schemeRows = rows;
-    minesCount = mines;
-    setted = 0;
-    puttedMines = 0;
-    schemeColumns = columns;
-    gameState = GAME_UNFINISHED_STATE;
-    int mineScheme[MAX_SCHEME_SIZE][MAX_SCHEME_SIZE];
     for(int i = 0; i < rows; i++)
     {
-        for(int j = 0; j < columns; j++)
+        for(int j = 0; j < cols; j++)
         {
-            scheme[i][j] = UNINITIALIZED;
-            gameGrid[i][j] = UNOPENED_CELL;
-            mineScheme[i][j] = 0;
-        }
-    }
-    for(int i = 0; i < mines; i++)
-    {
-        int mineX = 0, mineY = 0;
-        do
-        {
-            mineX = rand() % rows;
-            mineY = rand() % columns;
-        }
-        while(scheme[mineX][mineY] == HAS_MINE);
-        scheme[mineX][mineY] = HAS_MINE;
-        mineScheme[mineX][mineY] = 1;
-    }
-    for(int i = 0; i < rows; i++)
-    {
-        for(int j = 0; j < columns; j++)
-        {
-            if(scheme[i][j] == UNINITIALIZED)
+            if(gameGrid[i][j] != UNOPENED_CELL)
             {
-                scheme[i][j] = 0;
-                if(i > 0) scheme[i][j] += mineScheme[i-1][j];
-                if(i < rows-1) scheme[i][j] += mineScheme[i+1][j];
-                if(j > 0) scheme[i][j] += mineScheme[i][j-1];
-                if(j < columns-1) scheme[i][j] += mineScheme[i][j+1];
-                if(i > 0 && j > 0) scheme[i][j] += mineScheme[i-1][j-1];
-                if(i > 0 && j < columns-1) scheme[i][j] += mineScheme[i-1][j+1];
-                if(i < rows-1 && j > 0) scheme[i][j] += mineScheme[i+1][j-1];
-                if(i < rows-1 && j < columns-1) scheme[i][j] += mineScheme[i+1][j+1];
+                if(gameGrid[i][j] == '0'+HAS_MINE)
+                {
+                    grid[i*cols + j].setTexture(&mine);
+                }
+                else if(gameGrid[i][j] == MINE_CELL)
+                {
+                    grid[i*cols + j].setTexture(&flag);
+                }
+                else
+                {
+                    grid[i*cols + j].setTexture(&numbers[gameGrid[i][j]-'0']);
+                }
             }
-            ///cout<<setw(5)<<scheme[i][j]<<" ";
+            else
+            {
+                grid[i*cols + j].setTexture(&defTexture);
+            }
         }
-        //cout<<endl;
     }
-}
-void removeMine(int x, int y)
-{
-    if(x < 0 || x >= schemeRows || y < 0 || y >= schemeColumns)
+    if(gameState == GAME_WIN_STATE)
     {
-        return;
+        status.setTexture(&cool);
     }
-    if(gameGrid[x][y] != MINE_CELL)
+    else if(gameState == GAME_BOOM_STATE)
     {
-        return;
+        status.setTexture(&sad);
     }
-    cout<<"TUKA"<<endl;
-    gameGrid[x][y] = UNOPENED_CELL;
-    setted--;
-    puttedMines--;
-}
-void setAsMine(int x, int y)
-{
-    if(x < 0 || x >= schemeRows || y < 0 || y >= schemeColumns)
+    else
     {
-        return;
+        status.setTexture(&happy);
     }
-    if(gameGrid[x][y] != UNOPENED_CELL)
+    
+    string tmp = intToString(minesCount - puttedMines);
+    mCountText.setString(tmp);
+    if(gameState == GAME_UNFINISHED_STATE)
     {
-        return;
-    }
-    gameGrid[x][y] = MINE_CELL;
-    setted++;
-    puttedMines++;
-}
-void openCell(int x, int y)
-{
-    if(x < 0 || x >= schemeRows || y < 0 || y >= schemeColumns)
-    {
-        return;
-    }
-    if(gameGrid[x][y] != UNOPENED_CELL)
-    {
-        return;
-    }
-    //cout<<x<<" "<<y<<endl;
-    setted++;
-    gameGrid[x][y] = '0' + scheme[x][y];
-    if(scheme[x][y] == 0)
-    {
-        openCell(x-1, y);
-        openCell(x+1, y);
-        openCell(x, y-1);
-        openCell(x, y+1);
-        openCell(x+1, y+1);
-        openCell(x-1, y+1);
-        openCell(x+1, y-1);
-        openCell(x-1, y-1);
-    }
-    if(scheme[x][y] == HAS_MINE)
-    {
-        gameState = GAME_BOOM_STATE;
-    }
-    cout<<"Cell "<< x <<" "<< y<<" opened!"<<endl;
-}
-void openIfCompleted(int x,int y)
-{
-    if(countSurroundingMines(x,y) == scheme[x][y] && gameGrid[x][y] != UNOPENED_CELL)
-    {
-        openCell(x-1, y);
-        openCell(x+1, y);
-        openCell(x, y-1);
-        openCell(x, y+1);
-        openCell(x+1, y+1);
-        openCell(x-1, y+1);
-        openCell(x+1, y-1);
-        openCell(x-1, y-1);
-    }
-}
-void refreshGrid()
-{
-    //system("clear");
-    for(int i = 0; i < schemeRows; i++)
-    {
-        for(int j = 0; j < schemeColumns; j++)
+        sf::Time time = timer.getElapsedTime();
+        string timeString="";
+        if(pressed)
         {
-            cout<<setw(2)<<gameGrid[i][j];
+            timeString = intToString(time.asSeconds());
         }
-        cout<<endl;
-    }
-}
-/*int main()
-{
-
-    init();
-    //drawMatrix(8,8);
-    //=======================    
-    srand( time(NULL) );
-    cout << "Въведете броя редове: " << endl;
-    do
-    {
-        cin >> schemeRows;
-    }
-    while(schemeRows < 0 || schemeRows > MAX_SCHEME_SIZE);
-    cout << "Въведете броя колони: " << endl;
-    do
-    {
-        cin >> schemeColumns;
-    }
-    while(schemeColumns < 0 || schemeColumns > MAX_SCHEME_SIZE);
-    cout << "Въведете броя мини: "<<endl;
-    do
-    {
-        cin >> minesCount;
-    }
-    while(minesCount < 0 || minesCount > schemeColumns * schemeRows);
-    generateScheme(schemeRows, schemeColumns, minesCount);
-    refreshGrid();
-    drawMatrix(schemeRows,schemeColumns);
-    /*for(int i=0;i<schemeRows;i++)
-    {
-        for(int j=0;j<schemeColumns;j++)
+        else
         {
-            cout<<setw(3)<<scheme[i][j];
+            timeString = "0";
         }
-        cout<<endl;
-    }*/
-    /*int cmd;
-    while(gameState == GAME_UNFINISHED_STATE && cin>>cmd)
-    {
-        int x,y;
-        cin>>x>>y;
-        switch(cmd)
-        {
-            case CMD_OPEN:
-            {
-                openCell(x,y);
-                refreshGrid();  
-                break;
-            }
-            case CMD_SETMINE:
-            {
-                setAsMine(x,y);
-                refreshGrid();
-                break;
-            }
-            case CMD_UNSETMINE:
-            {
-                removeMine(x,y);
-                refreshGrid();
-                break;
-            }
-            case CMD_COMPLETED_OPEN:
-            {
-                openIfCompleted(x,y);
-                refreshGrid();
-                break;
-            }
-
-        }
-        
-    }
+        timerText.setString(timeString);
+    } 
 
 
-
+}
+int drawMatrix(int rows, int cols)
+{
+    sf::RenderWindow window(sf::VideoMode((rows+4)*SQUARE_SIZE,(cols+4)*SQUARE_SIZE), "Minesweeper");
+    status.setSize(sf::Vector2f(SQUARE_SIZE,SQUARE_SIZE));
+    status.setPosition(window.getSize().x / 2 - SQUARE_SIZE / 2, SQUARE_SIZE / 2);
+    mCount.setSize(sf::Vector2f(3*SQUARE_SIZE, SQUARE_SIZE));
+    mCount.setPosition(SQUARE_SIZE,SQUARE_SIZE/2);
+    mCount.setFillColor(sf::Color::White);
+    mCountText.setPosition(2.0*SQUARE_SIZE,SQUARE_SIZE/2);
+    mCountText.setFillColor(sf::Color::Red);
+    timerRect.setSize(sf::Vector2f(3*SQUARE_SIZE, SQUARE_SIZE));
+    timerRect.setPosition(window.getSize().x - 4 * SQUARE_SIZE, SQUARE_SIZE / 2);
+    timerRect.setFillColor(sf::Color::White);
+    timerText.setPosition(window.getSize().x - 3 * SQUARE_SIZE, SQUARE_SIZE / 2);
+    timerText.setFillColor(sf::Color::Red);
+    timerText.setFont(arial);
+    timerText.setCharacterSize(25);
+    if(!arial.loadFromFile("fonts/arial.ttf"))
+    {
+        cout << "Font load failed" << endl;
+    }
+    mCountText.setFont(arial);
+    mCountText.setCharacterSize(25);
 
     
+    
+    if(!defTexture.loadFromFile("images/default.png") || !mine.loadFromFile("images/mine.png") || !flag.loadFromFile("images/flag.png") || !happy.loadFromFile("images/happy.png") || !cool.loadFromFile("images/cool.jpeg") || !sad.loadFromFile("images/sad.jpeg"))
+    {
+        cout << "Texture load failed" <<endl;
+        
+    }
+    for(int i = 0; i <= 8; i++)
+    {
+        char tmp = i + '0';
+        string a = "images/";
+        a.push_back(tmp);
+        a+=".png";
+        if(!numbers[i].loadFromFile(a))
+        {
+            cout << "Texture load failed" <<endl;
+        }
+    }
+    for(int i = 0; i < rows; i++)
+    {
+        for(int j = 0; j < cols; j++)
+        {
+            sf::RectangleShape tmp;
+            tmp.setSize(sf::Vector2f(SQUARE_SIZE,SQUARE_SIZE));
+            tmp.setPosition(sf::Vector2f((j+2) * SQUARE_SIZE, (i+2) * SQUARE_SIZE));
+            
+        
+            grid.push_back(tmp);
+        }
+    }
+    while(window.isOpen())
+    {
+        sf::Event event;
+        while(window.pollEvent(event))
+        {
+            switch(event.type)
+            {
+                case sf::Event::Closed:
+                {
+                    window.close();
+                    break;
+                }
+                case sf::Event::MouseButtonPressed:
+                {
+                    if(event.key.code == sf::Mouse::Left && event.mouseButton.x > window.getSize().x / 2 - SQUARE_SIZE / 2 && event.mouseButton.x < window.getSize().x / 2 + SQUARE_SIZE / 2 && event.mouseButton.y > SQUARE_SIZE / 2 && event.mouseButton.y < (3*SQUARE_SIZE/2))
+                    {
+                        pressed = false;
+                        generateScheme(ROWS,COLUMNS,MINES);
+                        break;
+                    }
+                    if(gameState == GAME_BOOM_STATE || gameState == GAME_WIN_STATE)
+                    {
+                        break;
+                    }
+                    if(event.key.code == sf::Mouse::Left)
+                    {
+                        
+                        if(event.mouseButton.x > 2*SQUARE_SIZE && event.mouseButton.x < window.getSize().x - 2*SQUARE_SIZE && event.mouseButton.y > 2*SQUARE_SIZE && event.mouseButton.y < window.getSize().y - 2*SQUARE_SIZE)
+                        {
+                            if(!pressed)
+                            {
+                                timer.restart();
+                                pressed = true;
+                            }
+                            int r = (event.mouseButton.y / SQUARE_SIZE) - 2;
+                            int c = (event.mouseButton.x / SQUARE_SIZE) - 2;
+                            if(gameGrid[r][c] == UNOPENED_CELL)
+                            {
+                                openCell(r,c);
+                            }
+                            else
+                            {
+                                openIfCompleted(r,c);
+                            }
+                        }
+                        
+                        //status.setPosition(window.getSize().x / 2 - SQUARE_SIZE / 2, SQUARE_SIZE / 2);
+                    }
+                    else if(event.key.code == sf::Mouse::Right)
+                    {
+                        if(event.mouseButton.x > 2*SQUARE_SIZE && event.mouseButton.x < window.getSize().x - 2*SQUARE_SIZE && event.mouseButton.y > 2*SQUARE_SIZE && event.mouseButton.y < window.getSize().y - 2*SQUARE_SIZE)
+                        {
+                            if(!pressed)
+                            {
+                                timer.restart();
+                                pressed = true;
+                            }
+                            int r = (event.mouseButton.y / SQUARE_SIZE) - 2;
+                            int c = (event.mouseButton.x / SQUARE_SIZE) - 2;
+                            if(gameGrid[r][c] != MINE_CELL)
+                            {
+                                setAsMine(r,c);
+                            }
+                            else
+                            {
+                                removeMine(r,c);
+                            }
+                            
+                        }
+                    }
+                    if(setted == schemeRows * schemeColumns)
+                    {
+                        gameState = GAME_WIN_STATE;
+                    }
+                    break;
+                }
+            }
+            
+        }
+        window.clear();
+        
+        updateGameGrid(rows,cols);
+        for(int i = 0; i < rows; i++)
+        {
+            for(int j = 0; j < cols; j++)
+            {
+                //grid[i * cols + j].setTexture(&defTexture);
+                window.draw(grid[i * cols + j]);
+            }
+        }
+        window.draw(status);
+        window.draw(mCount);
+        window.draw(mCountText);
+        window.draw(timerRect);
+        window.draw(timerText);
+        window.display();
+    }
+    return EXIT_SUCCESS;
+}
+int main()
+{
+    generateScheme(ROWS, COLUMNS, MINES);
+    drawMatrix(ROWS, COLUMNS);
 
-
-}*/
+}
