@@ -4,6 +4,9 @@
 #include "main.cpp"
 
 #define SQUARE_SIZE 30
+#define ROWS 9
+#define COLUMNS 9
+#define MINES 10
 
 using namespace std;
 
@@ -16,7 +19,11 @@ sf::Texture flag;
 sf::Texture happy,cool,sad;
 sf::RectangleShape mCount;
 sf::Text mCountText;
+sf::RectangleShape timerRect;
+sf::Text timerText;
 sf::Font arial;
+sf::Clock timer;
+bool pressed = false;
 
 
 string intToString(int number)
@@ -68,7 +75,20 @@ void updateGameGrid(int rows, int cols)
     
     string tmp = intToString(minesCount - puttedMines);
     mCountText.setString(tmp);
-    
+    if(gameState == GAME_UNFINISHED_STATE)
+    {
+        sf::Time time = timer.getElapsedTime();
+        string timeString="";
+        if(pressed)
+        {
+            timeString = intToString(time.asSeconds());
+        }
+        else
+        {
+            timeString = "0";
+        }
+        timerText.setString(timeString);
+    } 
 
 
 }
@@ -82,12 +102,19 @@ int drawMatrix(int rows, int cols)
     mCount.setFillColor(sf::Color::White);
     mCountText.setPosition(2.0*SQUARE_SIZE,SQUARE_SIZE/2);
     mCountText.setFillColor(sf::Color::Red);
+    timerRect.setSize(sf::Vector2f(3*SQUARE_SIZE, SQUARE_SIZE));
+    timerRect.setPosition(window.getSize().x - 4 * SQUARE_SIZE, SQUARE_SIZE / 2);
+    timerRect.setFillColor(sf::Color::White);
+    timerText.setPosition(window.getSize().x - 3 * SQUARE_SIZE, SQUARE_SIZE / 2);
+    timerText.setFillColor(sf::Color::Red);
+    timerText.setFont(arial);
+    timerText.setCharacterSize(25);
     if(!arial.loadFromFile("fonts/arial.ttf"))
     {
         cout << "Font load failed" << endl;
     }
     mCountText.setFont(arial);
-    mCountText.setCharacterSize(20);
+    mCountText.setCharacterSize(25);
 
     
     
@@ -134,14 +161,26 @@ int drawMatrix(int rows, int cols)
                 }
                 case sf::Event::MouseButtonPressed:
                 {
+                    if(event.key.code == sf::Mouse::Left && event.mouseButton.x > window.getSize().x / 2 - SQUARE_SIZE / 2 && event.mouseButton.x < window.getSize().x / 2 + SQUARE_SIZE / 2 && event.mouseButton.y > SQUARE_SIZE / 2 && event.mouseButton.y < (3*SQUARE_SIZE/2))
+                    {
+                        pressed = false;
+                        generateScheme(ROWS,COLUMNS,MINES);
+                        break;
+                    }
                     if(gameState == GAME_BOOM_STATE || gameState == GAME_WIN_STATE)
                     {
                         break;
                     }
                     if(event.key.code == sf::Mouse::Left)
                     {
+                        
                         if(event.mouseButton.x > 2*SQUARE_SIZE && event.mouseButton.x < window.getSize().x - 2*SQUARE_SIZE && event.mouseButton.y > 2*SQUARE_SIZE && event.mouseButton.y < window.getSize().y - 2*SQUARE_SIZE)
                         {
+                            if(!pressed)
+                            {
+                                timer.restart();
+                                pressed = true;
+                            }
                             int r = (event.mouseButton.y / SQUARE_SIZE) - 2;
                             int c = (event.mouseButton.x / SQUARE_SIZE) - 2;
                             cout<<r<<" "<<c<<endl;
@@ -156,11 +195,18 @@ int drawMatrix(int rows, int cols)
                             refreshGrid();
                         //cout<<event.mouseButton.x<<endl;
                         }
+                        
+                        //status.setPosition(window.getSize().x / 2 - SQUARE_SIZE / 2, SQUARE_SIZE / 2);
                     }
                     else if(event.key.code == sf::Mouse::Right)
                     {
                         if(event.mouseButton.x > 2*SQUARE_SIZE && event.mouseButton.x < window.getSize().x - 2*SQUARE_SIZE && event.mouseButton.y > 2*SQUARE_SIZE && event.mouseButton.y < window.getSize().y - 2*SQUARE_SIZE)
                         {
+                            if(!pressed)
+                            {
+                                timer.restart();
+                                pressed = true;
+                            }
                             int r = (event.mouseButton.y / SQUARE_SIZE) - 2;
                             int c = (event.mouseButton.x / SQUARE_SIZE) - 2;
                             cout<<r<<" "<<c<<endl;
@@ -201,13 +247,15 @@ int drawMatrix(int rows, int cols)
         window.draw(status);
         window.draw(mCount);
         window.draw(mCountText);
+        window.draw(timerRect);
+        window.draw(timerText);
         window.display();
     }
     return EXIT_SUCCESS;
 }
 int main()
 {
-    generateScheme(9, 9, 10);
-    drawMatrix(9,9);
+    generateScheme(ROWS, COLUMNS, MINES);
+    drawMatrix(ROWS, COLUMNS);
 
 }

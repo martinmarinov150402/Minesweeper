@@ -50,6 +50,8 @@ void generateScheme(int rows, int columns, int mines)
     srand(time(NULL));
     schemeRows = rows;
     minesCount = mines;
+    setted = 0;
+    puttedMines = 0;
     schemeColumns = columns;
     gameState = GAME_UNFINISHED_STATE;
     int mineScheme[MAX_SCHEME_SIZE][MAX_SCHEME_SIZE];
@@ -146,7 +148,7 @@ void openCell(int x, int y)
         openCell(x+1, y+1);
         openCell(x-1, y+1);
         openCell(x+1, y-1);
-        openCell(x-1, y+1);
+        openCell(x-1, y-1);
     }
     if(scheme[x][y] == HAS_MINE)
     {
