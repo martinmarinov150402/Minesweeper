@@ -4,19 +4,18 @@
 #include "functionality.cpp"
 
 #define SQUARE_SIZE 30
-#define ROWS 9
-#define COLUMNS 9
-#define MINES 10
 
 using namespace std;
 
 vector<sf::RectangleShape> grid;
 sf::RectangleShape status;
+sf::RectangleShape l1,l2,l3;
 sf::Texture defTexture;
 sf::Texture numbers[9];
 sf::Texture mine;
 sf::Texture flag;
 sf::Texture happy,cool,sad;
+sf::Texture level1, level2, level3;
 sf::RectangleShape mCount;
 sf::Text mCountText;
 sf::RectangleShape timerRect;
@@ -24,6 +23,10 @@ sf::Text timerText;
 sf::Font arial;
 sf::Clock timer;
 bool pressed = false;
+int ROWS = 16;
+int COLUMNS = 16;
+int MINES = 40;
+bool closed = false;
 
 
 string intToString(int number)
@@ -94,7 +97,8 @@ void updateGameGrid(int rows, int cols)
 }
 int drawMatrix(int rows, int cols)
 {
-    sf::RenderWindow window(sf::VideoMode((rows+4)*SQUARE_SIZE,(cols+4)*SQUARE_SIZE), "Minesweeper");
+    grid.clear();
+    sf::RenderWindow window(sf::VideoMode((cols+4)*SQUARE_SIZE,(rows+4)*SQUARE_SIZE), "Minesweeper");
     status.setSize(sf::Vector2f(SQUARE_SIZE,SQUARE_SIZE));
     status.setPosition(window.getSize().x / 2 - SQUARE_SIZE / 2, SQUARE_SIZE / 2);
     mCount.setSize(sf::Vector2f(3*SQUARE_SIZE, SQUARE_SIZE));
@@ -109,6 +113,12 @@ int drawMatrix(int rows, int cols)
     timerText.setFillColor(sf::Color::Red);
     timerText.setFont(arial);
     timerText.setCharacterSize(25);
+    l1.setSize(sf::Vector2f(SQUARE_SIZE,SQUARE_SIZE));
+    l2.setSize(sf::Vector2f(SQUARE_SIZE,SQUARE_SIZE));
+    l3.setSize(sf::Vector2f(SQUARE_SIZE,SQUARE_SIZE));
+    l1.setPosition(1.5 * SQUARE_SIZE , window.getSize().y - 1.5 * SQUARE_SIZE);
+    l2.setPosition(window.getSize().x/2 - SQUARE_SIZE/2, window.getSize().y - 1.5 * SQUARE_SIZE);
+    l3.setPosition(window.getSize().x - 2.5 * SQUARE_SIZE, window.getSize().y - 1.5 * SQUARE_SIZE);
     if(!arial.loadFromFile("fonts/arial.ttf"))
     {
         cout << "Font load failed" << endl;
@@ -123,6 +133,11 @@ int drawMatrix(int rows, int cols)
         cout << "Texture load failed" <<endl;
         
     }
+    if(!level1.loadFromFile("images/button-level_1.png") || !level2.loadFromFile("images/button-level_2.png") || !level3.loadFromFile("images/button-level_3.jpg"))
+    {
+        cout << "Texture load failed" << endl;
+    }
+
     for(int i = 0; i <= 8; i++)
     {
         char tmp = i + '0';
@@ -156,6 +171,7 @@ int drawMatrix(int rows, int cols)
                 case sf::Event::Closed:
                 {
                     window.close();
+                    closed = true;
                     break;
                 }
                 case sf::Event::MouseButtonPressed:
@@ -172,7 +188,43 @@ int drawMatrix(int rows, int cols)
                     }
                     if(event.key.code == sf::Mouse::Left)
                     {
-                        
+                        /*l1.setPosition(1.5 * SQUARE_SIZE , window.getSize().y - 1.5 * SQUARE_SIZE);
+                        l2.setPosition(window.getSize().x/2 - SQUARE_SIZE/2, window.getSize().y - 1.5 * SQUARE_SIZE);
+                        l3.setPosition(window.getSize().x - 2.5 * SQUARE_SIZE, window.getSize().y - 1.5 * SQUARE_SIZE);*/
+                        if(event.mouseButton.y > (window.getSize().y - 1.5 * SQUARE_SIZE) && event.mouseButton.y < (window.getSize().y - 0.5 * SQUARE_SIZE))
+                        {
+                            if(event.mouseButton.x > 1.5 * SQUARE_SIZE && event.mouseButton.x < 2.5 * SQUARE_SIZE)
+                            {
+                                pressed = false;
+                                ROWS = 9;
+                                COLUMNS = 9;
+                                MINES = 10;
+                                window.close();
+                                //drawMatrix(ROWS, COLUMNS);
+                                return 0;
+                            }
+                            if(event.mouseButton.x > window.getSize().x/2 - 0.5 * SQUARE_SIZE && event.mouseButton.x < window.getSize().x/2 + 0.5 * SQUARE_SIZE)
+                            {
+                                pressed = false;
+                                ROWS = 16;
+                                COLUMNS = 16;
+                                MINES = 40;
+                                window.close();
+                                return 0;
+                                //drawMatrix(ROWS, COLUMNS);
+                            }
+                            if(event.mouseButton.x > window.getSize().x - 2.5 * SQUARE_SIZE && event.mouseButton.x < window.getSize().x - 1.5 * SQUARE_SIZE)
+                            {
+                                pressed = false;
+                                ROWS = 16;
+                                COLUMNS = 30;
+                                MINES = 99;
+                                window.close();
+                                return 0;
+                                //drawMatrix(ROWS, COLUMNS);
+                            }
+
+                        }
                         if(event.mouseButton.x > 2*SQUARE_SIZE && event.mouseButton.x < window.getSize().x - 2*SQUARE_SIZE && event.mouseButton.y > 2*SQUARE_SIZE && event.mouseButton.y < window.getSize().y - 2*SQUARE_SIZE)
                         {
                             if(!pressed)
@@ -236,18 +288,27 @@ int drawMatrix(int rows, int cols)
                 window.draw(grid[i * cols + j]);
             }
         }
+        l1.setTexture(&level1);
+        l2.setTexture(&level2);
+        l3.setTexture(&level3);
         window.draw(status);
         window.draw(mCount);
         window.draw(mCountText);
         window.draw(timerRect);
         window.draw(timerText);
+        window.draw(l1);
+        window.draw(l2);
+        window.draw(l3);
         window.display();
     }
     return EXIT_SUCCESS;
 }
 int main()
 {
-    generateScheme(ROWS, COLUMNS, MINES);
-    drawMatrix(ROWS, COLUMNS);
+    while(!closed)
+    {
+        generateScheme(ROWS, COLUMNS, MINES);
+        drawMatrix(ROWS, COLUMNS);
+    }
 
 }
